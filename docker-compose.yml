@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  j-service:
+    build: .
+    command: ./script/start
+    volumes:
+      - .:/app
+    volumes_from:
+      - box
+    ports:
+      - 3000:3000
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: "pg_isready -U postgres"
+      interval: 2s
+      timeout: 5s
+      retries: 10
+  box:
+    image: busybox
+    volumes:
+      - /box

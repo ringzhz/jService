@@ -26,51 +26,60 @@
 	  	end
 	  	
 	  	gameIds.each do |gid|
-		  	gameurl = 'http://www.j-archive.com/showgame.php?game_id='+gid.to_s
-		  	game = Nokogiri::HTML(URI.open(gameurl))
-		  	
-		  	## OK, were going to do this twice, once for each round
-		  	questions = game.css("#jeopardy_round .clue")
-		  	
-		  	#Define vars
-		  	var_question = ''
-		  	var_answer = ''
-		  	var_value = ''
-		  	var_category = ''
-		  	var_airdate = nil 
-		
-		  	
-		  	#get an array of the category names, we'll need these later
-		  	categories = game.css('#jeopardy_round .category_name')
-		  	categoryArr = Array.new
-		  	categories.each do |c|
-			  	categoryName = c.text().downcase
-			  	categoryArr.push(Category.find_or_create_by(title: categoryName))
-		  	end
-		
-		  	#get the airdate
-		  	ad = game.css('#game_title h1').text().split(" - ")
-		  	if(!ad[1].nil?)
-		  		var_airdate = Chronic.parse(ad[1])
-		  		puts "Working on: " + ad[1]
-		  	end
-		
-		  	questions.each do |q|
-					var_answer = q.css('.correct_response').text()
-					var_question = q.css('.clue_text').text()
-					index =	q.xpath('count(preceding-sibling::*)').to_i
-					var_category = categoryArr[index]
-					var_value = q.css('.clue_value').text[/[0-9\.]+/]
+				
+				begin
+					gameurl = 'http://www.j-archive.com/showgame.php?game_id='+gid.to_s
+					game = Nokogiri::HTML(URI.open(gameurl))
 
-					newClue = Clue.where(
-						:question => var_question,
-						:answer => var_answer,
-						:category => var_category,
-						:value => var_value,
-						:airdate => var_airdate,
-						:game_id => gid
-					).first_or_create
-		  	end
-		 end #each
+
+				rescue Net::OpenTimeout => e
+					print "Failed to load a game. Trying again in a sec..."
+					sleep(1)
+					gameIds.unshift(gid)
+				end
+					
+					## OK, were going to do this twice, once for each round
+					questions = game.css("#jeopardy_round .clue")
+					
+					#Define vars
+					var_question = ''
+					var_answer = ''
+					var_value = ''
+					var_category = ''
+					var_airdate = nil 
+			
+					
+					#get an array of the category names, we'll need these later
+					categories = game.css('#jeopardy_round .category_name')
+					categoryArr = Array.new
+					categories.each do |c|
+						categoryName = c.text().downcase
+						categoryArr.push(Category.find_or_create_by(title: categoryName))
+					end
+			
+					#get the airdate
+					ad = game.css('#game_title h1').text().split(" - ")
+					if(!ad[1].nil?)
+						var_airdate = Chronic.parse(ad[1])
+						puts "Working on: " + ad[1]
+					end
+			
+					questions.each do |q|
+						var_answer = q.css('.correct_response').text()
+						var_question = q.css('.clue_text[1]').text()
+						index =	q.xpath('count(preceding-sibling::*)').to_i
+						var_category = categoryArr[index]
+						var_value = q.css('.clue_value').text[/[0-9\.]+/]
+
+						newClue = Clue.where(
+							:question => var_question,
+							:answer => var_answer,
+							:category => var_category,
+							:value => var_value,
+							:airdate => var_airdate,
+							:game_id => gid
+						).first_or_create
+					end
+				end
     end #if
   end
