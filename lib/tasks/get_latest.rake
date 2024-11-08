@@ -10,7 +10,7 @@
 
   	arg1int = args.arg1.to_s.match(/\A[+-]?\d+?(\.\d+)?\Z/) == nil ? false : true
     arg2int = args.arg2.to_s.match(/\A[+-]?\d+?(\.\d+)?\Z/) == nil ? false : true
-  	if(arg1int && arg2int)
+    if(arg1int && arg2int)
   	  	#get game list
   	  	gameIds = Array.new
 	  	for i in args.arg1.to_i..args.arg2.to_i
@@ -56,16 +56,7 @@
 		  	end
 		
 		  	questions.each do |q|
-		  		
-		  		qdiv = q.css('div').first
-		
-		  		if(!qdiv.nil?)
-		  			qdivMouseover = qdiv.attr('onmouseover')
-		  			#=========== Set Answer =============
-		  			answermatch = /ponse">(.*)<\/e/.match(qdivMouseover)
-		  			var_answer = answermatch.captures[0].to_s
-		 
-		  			#puts var_answer
+					var_answer = q.css('.correct_response').text()
 					var_question = q.css('.clue_text').text()
 					index =	q.xpath('count(preceding-sibling::*)').to_i
 					var_category = categoryArr[index]
@@ -79,8 +70,7 @@
 						:airdate => var_airdate,
 						:game_id => gid
 					).first_or_create
-		  		end
 		  	end
 		 end #each
-	  end #if
+    end #if
   end
