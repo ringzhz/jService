@@ -1,4 +1,5 @@
 JArchive::Application.routes.draw do
+  get '/health_check', to: proc { [200, {}, ['success']] }
 
   get "search" => "search#index"
   get "search/:query" => "search#index", :as => "search_term"
